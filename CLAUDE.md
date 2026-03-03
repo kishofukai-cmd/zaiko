@@ -4,13 +4,61 @@ This file provides guidance to AI assistants (Claude, Copilot, etc.) working in 
 
 ## Project Overview
 
-**zaiko** (在庫) — An inventory management system. The name is Japanese for "inventory/stock".
+**zaiko** (在庫) — An internal inventory variance analysis tool for finance teams.
 
-> This repository is in early setup. Update this file as the project evolves.
+Identifies root causes of differences between:
+- Accounting inventory (MF会計など)
+- Physical inventory (棚卸)
+- Logistics transactions (IN / OUT)
+
+Analysis priority:
+1. Quantity reconciliation (Phase 1)
+2. Monetary variance analysis (Phase 2)
+3. Root cause classification
+
+**Design philosophy: Excel-first.** Input and output are Excel workbooks. No UI, no auth, internal finance use only.
+
+---
+
+## Input Sheets (Excel)
+
+| Sheet | Key Columns |
+|-------|-------------|
+| `SKU_MASTER` | SKU, JAN, Product Name, Standard Cost (opt.) |
+| `IN_TX` | Date, Partner, SKU, Quantity, DocNo |
+| `OUT_TX` | Date, Partner, SKU, Quantity, DocNo |
+| `STOCKTAKE` | Month, Partner, SKU, Physical Quantity |
+| `ACCOUNTING_SUMMARY` | Month, Opening, Purchases, COGS, Adjustments, Ending *(Phase 2)* |
+
+## Core Logic — Quantity Bridge (Phase 1)
+
+```
+Theoretical Qty = Previous Month Physical + Σ Inbound − Σ Outbound
+Variance        = Theoretical Qty − Current Physical Qty
+```
+
+Output sheet `BRIDGE_QUANTITY`: SKU | Opening Qty | Inbound | Outbound | Theoretical | Physical | Variance
+Sorted by absolute variance descending.
+
+## Root Cause Heuristics (Phase 2)
+
+1. **Timing Issue** — small diff, transaction near month end
+2. **Missing Return** — unmatched inbound/outbound return
+3. **Write-off / Disposal** — physical < theoretical, no accounting adjustment
+4. **Cost Mismatch** — qty matches but accounting value differs
+5. **Partner Code Inconsistency** — similar partner names across sheets
+
+## Monetary Reconciliation (Phase 2)
+
+```
+Variance Amount = Quantity Variance × Standard Cost
+Accounting Ending = Opening + Purchases − COGS ± Adjustments
+Compare: Accounting Ending vs. Physical Ending × Standard Cost
+```
 
 ## Repository Status
 
-This repository is currently empty (no source code committed yet). This CLAUDE.md establishes conventions and workflows to be followed as development begins.
+Phase 1 (quantity reconciliation) is in active development.
 
 ## Development Workflow
 
@@ -117,6 +165,7 @@ npm test          # Run tests
 |------|----------|-----------|
 | 2026-03-02 | Repository created | Initial setup of zaiko inventory system |
 | 2026-03-03 | Tech stack chosen: TypeScript / Node.js | Typed language for reliability in inventory logic |
+| 2026-03-03 | Excel-first design, Phase 1 = quantity reconciliation | Internal finance tool, no UI needed |
 
 ## For AI Assistants
 
