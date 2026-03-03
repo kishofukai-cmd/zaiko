@@ -65,9 +65,22 @@ For network failures during push/fetch, retry with exponential backoff:
 - Retry 3: wait 8s
 - Retry 4: wait 16s
 
-## Code Conventions
+## Tech Stack
 
-> Update this section once the tech stack is chosen.
+- **Language:** TypeScript (strict mode)
+- **Runtime:** Node.js
+- **Package manager:** npm
+
+## Development
+
+```bash
+npm install       # Install dependencies
+npm run dev       # Start dev server
+npm run build     # Compile TypeScript
+npm test          # Run tests
+```
+
+## Code Conventions
 
 ### General
 
@@ -76,27 +89,34 @@ For network failures during push/fetch, retry with exponential backoff:
 - Keep functions small and single-purpose
 - Validate input at system boundaries (user input, external APIs); trust internal code
 
+### TypeScript
+
+- Strict mode enabled — no `any`; use proper types or `unknown`
+- Use `const` by default; `let` only when reassignment is needed
+- Prefer `async/await` over raw Promise chains
+- Type errors as custom error classes or discriminated unions
+
 ### File Organization
 
 > To be defined once project structure is established.
 
 ## Testing
 
-> To be defined once testing framework is chosen.
-
+- Tests live alongside source files as `*.test.ts`
 - Run all tests before committing
 - New features should include tests
 - Bug fixes should include a regression test
 
 ## Environment Setup
 
-> To be defined. Expected: document required environment variables, dependencies, and setup steps here.
+> To be defined. Document required environment variables, dependencies, and setup steps here.
 
 ## Key Decisions Log
 
 | Date | Decision | Rationale |
 |------|----------|-----------|
 | 2026-03-02 | Repository created | Initial setup of zaiko inventory system |
+| 2026-03-03 | Tech stack chosen: TypeScript / Node.js | Typed language for reliability in inventory logic |
 
 ## For AI Assistants
 
