@@ -58,13 +58,14 @@ Compare: Accounting Ending vs. Physical Ending × Standard Cost
 
 ## Repository Status
 
-Phase 1 (quantity reconciliation) is in active development.
+Phase 1 (quantity reconciliation) is **complete** — all core source files are implemented.
+Phase 2 (monetary reconciliation, root cause classification) is planned but not yet started.
 
 ## Development Workflow
 
 ### Branch Strategy
 
-- `main` — stable, production-ready code
+- `master` — stable, production-ready code (default branch)
 - `develop` — integration branch for features
 - `claude/<description>` — branches used by AI assistants
 - `feature/<description>` — human-developed feature branches
@@ -103,7 +104,7 @@ Always push to the correct branch:
 git push -u origin <branch-name>
 ```
 
-Branch names for AI sessions start with `claude/` — never push to `main` directly.
+Branch names for AI sessions start with `claude/` — never push to `master` directly.
 
 ### Retry Policy
 
@@ -123,9 +124,23 @@ For network failures during push/fetch, retry with exponential backoff:
 
 ```bash
 npm install       # Install dependencies
-npm run dev       # Start dev server
-npm run build     # Compile TypeScript
-npm test          # Run tests
+npm run dev       # Run CLI via ts-node (no compilation needed)
+npm run build     # Compile TypeScript to dist/
+npm test          # Run tests (no framework configured yet)
+```
+
+### CLI Usage
+
+```bash
+# Basic usage (output file auto-named bridge_{partner}_{YYYY-MM}.xlsx)
+npx ts-node src/index.ts <input.xlsx> <partner> <YYYY-MM>
+
+# With explicit output path
+npx ts-node src/index.ts <input.xlsx> <partner> <YYYY-MM> <output.xlsx>
+
+# Example
+npx ts-node src/index.ts data.xlsx WH-TOKYO 2026-02
+# → writes bridge_WH-TOKYO_2026-02.xlsx
 ```
 
 ## Code Conventions
@@ -146,7 +161,22 @@ npm test          # Run tests
 
 ### File Organization
 
-> To be defined once project structure is established.
+```
+src/
+├── index.ts    # CLI entry point — argument parsing and orchestration
+├── types.ts    # All shared TypeScript types (SkuMaster, InboundTransaction, etc.)
+├── loader.ts   # Excel input reader — parses SKU_MASTER, IN_TX, OUT_TX, STOCKTAKE
+├── bridge.ts   # Core reconciliation logic — calculateBridge()
+└── excel.ts    # Excel output writer — writeBridgeSheet()
+```
+
+**Data flow:** `index.ts` → `loader.ts` (read input) → `bridge.ts` (compute) → `excel.ts` (write output)
+
+**Adding new Phase 2 logic:**
+- Add new types to `types.ts`
+- Add a new reader function in `loader.ts` for `ACCOUNTING_SUMMARY`
+- Create `monetaryBridge.ts` alongside `bridge.ts` for Phase 2 calculations
+- Extend `excel.ts` with a new sheet writer function
 
 ## Testing
 
@@ -155,9 +185,37 @@ npm test          # Run tests
 - New features should include tests
 - Bug fixes should include a regression test
 
+> **Current status:** No test framework is configured yet (`npm test` exits with an error).
+> When adding tests, choose a framework (e.g. Vitest or Jest) and update `package.json` and this file.
+
 ## Environment Setup
 
-> To be defined. Document required environment variables, dependencies, and setup steps here.
+No environment variables are required. The tool is fully self-contained.
+
+**Prerequisites:**
+- Node.js (tested with ES2020 target; Node 18+ recommended)
+- npm
+
+**First-time setup:**
+```bash
+git clone <repo-url>
+cd zaiko
+npm install
+```
+
+**Runtime dependencies:**
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `exceljs` | ^4.4.0 | Read/write Excel workbooks (.xlsx) |
+
+**Dev dependencies:**
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `typescript` | ^5.9.3 | TypeScript compiler |
+| `ts-node` | ^10.9.2 | Run `.ts` files directly without pre-compiling |
+| `@types/node` | ^25.3.3 | Node.js type definitions |
+
+**Output files:** Generated `.xlsx` files are gitignored (see `.gitignore`). Sample files in `sample/` are not ignored.
 
 ## Key Decisions Log
 
@@ -166,11 +224,14 @@ npm test          # Run tests
 | 2026-03-02 | Repository created | Initial setup of zaiko inventory system |
 | 2026-03-03 | Tech stack chosen: TypeScript / Node.js | Typed language for reliability in inventory logic |
 | 2026-03-03 | Excel-first design, Phase 1 = quantity reconciliation | Internal finance tool, no UI needed |
+| 2026-03-04 | Phase 1 scaffold complete | All core src/ files implemented (loader, bridge, excel, types, index) |
 
 ## For AI Assistants
 
-- This is an early-stage project; conventions above are the starting baseline
 - Update this file whenever new conventions, tech choices, or workflows are established
-- Do not push to `main` without explicit permission
+- Do not push to `master` without explicit permission
 - Prefer small, incremental commits over large changesets
 - When uncertain about requirements, ask before implementing
+- Phase 2 work (monetary reconciliation, root cause classification) has not been started — do not implement it unless explicitly requested
+- No test framework is wired up yet; do not assume `npm test` passes
+- The default branch is `master` (not `main`)
